@@ -3,7 +3,9 @@ package main
 import (
     "fmt"
     "os"
+    "log"
     "flag"
+    "net/http"
 )
 
 func main() {
@@ -29,7 +31,22 @@ func fetchAddress(address string, key string) {
         os.Exit(1)
     }
 
-    fmt.Println(address)
+    client := &http.Client{}
+    req, err := http.NewRequest("GET", "https://maps.googleapis.com/maps/api/geocode/json", nil)
+
+    if err != nil {
+        log.Print(err)
+        os.Exit(1)
+    }
+
+    query := req.URL.Query()
+    query.Add("key", key)
+    query.Add("address", address)
+
+    req.URL.RawQuery = query.Encode()
+
+    log.Print(req.URL.String())
+    log.Print(client)
 }
 
 func processFile(file string, key string) {
