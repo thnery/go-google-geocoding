@@ -7,12 +7,25 @@ import (
     "flag"
     "net/http"
     "io/ioutil"
+    "encoding/json"
 )
 
-type simple_address struct {
-    FormattadedAddress string
-    Latitude float32
-    Longitude float32
+type Results struct {
+    Results []Result `json:"results"`
+}
+
+type Result struct {
+    FormattedAddress string `json:"formatted_address"`
+    Geometry Geometry `json:"geometry"`
+}
+
+type Geometry struct {
+    Location Location `json:"location"`
+}
+
+type Location struct {
+    Latitude float32 `json:"lat"`
+    Longitude float32 `json:"lng"`
 }
 
 func main() {
@@ -32,10 +45,13 @@ func main() {
 
     body := fetchAddress(*address, *key)
 
-    fmt.Println(body)
+    result := parseResponseBody(body)
+    fmt.Println("Address: " + result.FormattedAddress)
+    fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
+    fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
 }
 
-func fetchAddress(address, key string) string {
+func fetchAddress(address, key string) []byte {
     if address == "" {
         os.Exit(1)
     }
@@ -63,11 +79,14 @@ func fetchAddress(address, key string) string {
 
     handleError(err)
 
-    return string(body)
+    return body
 }
 
-func parseResponseBody(body string) string {
-    // TODO: parse the response body
+func parseResponseBody(body []byte) Result {
+    var results Results
+    json.Unmarshal(body, &results)
+    result := results.Results[0]
+    return result
 }
 
 // TODO: read and address file (txt or csv) and fetch the coordinates
