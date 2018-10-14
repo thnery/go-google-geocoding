@@ -8,6 +8,7 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
+    "path"
 )
 
 type Results struct {
@@ -40,18 +41,22 @@ func main() {
 
     flag.Parse()
 
-    fmt.Println(*key)
-    fmt.Println(*file)
+    if file != nil && *file != "" {
+        if address != nil && *address != "" {
+            log.Print("[WARNING] arg -address will be ignore due to arg -file has been set")
+        }
 
-    body := fetchAddress(*address, *key)
-
-    result := parseResponseBody(body)
-    fmt.Println("Address: " + result.FormattedAddress)
-    fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
-    fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
+        readFile(*file)
+    } else {
+        body := getAddressFromGoogle(*address, *key)
+        result := parseResponseBody(body)
+        fmt.Println("Address: " + result.FormattedAddress)
+        fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
+        fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
+    }
 }
 
-func fetchAddress(address, key string) []byte {
+func getAddressFromGoogle(address, key string) []byte {
     if address == "" {
         os.Exit(1)
     }
@@ -91,8 +96,23 @@ func parseResponseBody(body []byte) Result {
 
 // TODO: read and address file (txt or csv) and fetch the coordinates
 // from Google Geocoding API
-func processFile(file string, key string) {
-    fmt.Println("TODO")
+func readFile(file string) {
+    switch path.Ext(file) {
+    case ".txt":
+        processTxt(file)
+    case ".csv":
+        processCSV(file)
+    default:
+        log.Print("File not supported. Please use .txt or .csv files")
+    }
+}
+
+func processTxt(file string) {
+    log.Print(file)
+}
+
+func processCSV(file string) {
+    log.Print(file)
 }
 
 func handleError(err error) {
