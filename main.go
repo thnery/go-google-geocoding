@@ -9,6 +9,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "path"
+    "bufio"
 )
 
 type Results struct {
@@ -46,7 +47,7 @@ func main() {
             log.Print("[WARNING] arg -address will be ignore due to arg -file has been set")
         }
 
-        readFile(*file)
+        readFile(*key, *file)
     } else {
         body := getAddressFromGoogle(*address, *key)
         result := parseResponseBody(body)
@@ -96,19 +97,32 @@ func parseResponseBody(body []byte) Result {
 
 // TODO: read and address file (txt or csv) and fetch the coordinates
 // from Google Geocoding API
-func readFile(file string) {
-    switch path.Ext(file) {
+func readFile(key, filePath string) {
+    switch path.Ext(filePath) {
     case ".txt":
-        processTxt(file)
+        processTxt(key, filePath)
     case ".csv":
-        processCSV(file)
+        processCSV(filePath)
     default:
         log.Print("File not supported. Please use .txt or .csv files")
     }
 }
 
-func processTxt(file string) {
+func processTxt(key, filePath string) {
+    file, err := os.Open(filePath)
+    handleError(err)
     log.Print(file)
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        body := getAddressFromGoogle(scanner.Text(), key)
+        result := parseResponseBody(body)
+        fmt.Println("Address: " + result.FormattedAddress)
+        fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
+        fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
+
+    }
 }
 
 func processCSV(file string) {
