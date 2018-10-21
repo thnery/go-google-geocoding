@@ -8,8 +8,10 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
+    "encoding/csv"
     "path"
     "bufio"
+    "strings"
 )
 
 type Results struct {
@@ -51,9 +53,7 @@ func main() {
     } else {
         body := getAddressFromGoogle(*address, *key)
         result := parseResponseBody(body)
-        fmt.Println("Address: " + result.FormattedAddress)
-        fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
-        fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
+        printResult(result)
     }
 }
 
@@ -95,14 +95,12 @@ func parseResponseBody(body []byte) Result {
     return result
 }
 
-// TODO: read and address file (txt or csv) and fetch the coordinates
-// from Google Geocoding API
 func readFile(key, filePath string) {
     switch path.Ext(filePath) {
     case ".txt":
         processTxt(key, filePath)
     case ".csv":
-        processCSV(filePath)
+        processCSV(key, filePath)
     default:
         log.Print("File not supported. Please use .txt or .csv files")
     }
@@ -118,15 +116,42 @@ func processTxt(key, filePath string) {
     for scanner.Scan() {
         body := getAddressFromGoogle(scanner.Text(), key)
         result := parseResponseBody(body)
-        fmt.Println("Address: " + result.FormattedAddress)
-        fmt.Printf("Latitude: %f\n", result.Geometry.Location.Latitude)
-        fmt.Printf("Longitude: %f", result.Geometry.Location.Longitude)
-
+        printResult(result)
     }
 }
 
-func processCSV(file string) {
-    log.Print(file)
+func processCSV(key, filePath string) {
+    file, err := os.Open(filePath)
+    handleError(err)
+    defer file.Close()
+
+    reader := csv.NewReader(bufio.NewReader(file))
+    reader.Comma = ';'
+
+    records, err := reader.ReadAll()
+    handleError(err)
+
+    for i := range(records) {
+        if i == 0 {
+            // skip header
+            continue
+        }
+
+        log.Print(records[i])
+        address := strings.Join(records[i], ",")
+        log.Print(address)
+        if address != "" {
+            body := getAddressFromGoogle(address, key)
+            result := parseResponseBody(body)
+            printResult(result)
+        }
+    }
+}
+
+func printResult(result Result) {
+    log.Print("Address: ", result.FormattedAddress)
+    log.Print("Latitude: ", result.Geometry.Location.Latitude)
+    log.Print("Longitude: ", result.Geometry.Location.Longitude)
 }
 
 func handleError(err error) {
