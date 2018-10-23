@@ -12,6 +12,8 @@ import (
     "path"
     "bufio"
     "strings"
+
+    "github.com/thnery/go-google-geocoding/reader"
 )
 
 type Results struct {
@@ -49,7 +51,8 @@ func main() {
             log.Print("[WARNING] arg -address will be ignore due to arg -file has been set")
         }
 
-        readFile(*key, *file)
+        // readFile(*key, *file)
+        reader.ReadFile(*key, *file)
     } else {
         body := getAddressFromGoogle(*address, *key)
         result := parseResponseBody(body)
@@ -57,95 +60,11 @@ func main() {
     }
 }
 
-func getAddressFromGoogle(address, key string) []byte {
-    if address == "" {
-        os.Exit(1)
-    }
-
-    client := &http.Client{}
-    req, err := http.NewRequest("GET", "https://maps.googleapis.com/maps/api/geocode/json", nil)
-
-    handleError(err)
-
-    query := req.URL.Query()
-    query.Add("key", key)
-    query.Add("address", address)
-
-    req.URL.RawQuery = query.Encode()
-
-    log.Print(req.URL.String())
-    log.Print(client)
-
-    resp, err := client.Do(req)
-
-    handleError(err)
-
-    defer resp.Body.Close()
-    body, err := ioutil.ReadAll(resp.Body)
-
-    handleError(err)
-
-    return body
-}
-
 func parseResponseBody(body []byte) Result {
     var results Results
     json.Unmarshal(body, &results)
     result := results.Results[0]
     return result
-}
-
-func readFile(key, filePath string) {
-    switch path.Ext(filePath) {
-    case ".txt":
-        processTxt(key, filePath)
-    case ".csv":
-        processCSV(key, filePath)
-    default:
-        log.Print("File not supported. Please use .txt or .csv files")
-    }
-}
-
-func processTxt(key, filePath string) {
-    file, err := os.Open(filePath)
-    handleError(err)
-    log.Print(file)
-    defer file.Close()
-
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        body := getAddressFromGoogle(scanner.Text(), key)
-        result := parseResponseBody(body)
-        printResult(result)
-    }
-}
-
-func processCSV(key, filePath string) {
-    file, err := os.Open(filePath)
-    handleError(err)
-    defer file.Close()
-
-    reader := csv.NewReader(bufio.NewReader(file))
-    reader.Comma = ';'
-
-    records, err := reader.ReadAll()
-    handleError(err)
-
-    for i := range(records) {
-        if i == 0 {
-            // skip header
-            continue
-        }
-
-        log.Print(records[i])
-        address := strings.Join(records[i], ",")
-        log.Print(address)
-        if address != "" {
-            body := getAddressFromGoogle(address, key)
-            result := parseResponseBody(body)
-            printResult(result)
-        }
-    }
 }
 
 func printResult(result Result) {
