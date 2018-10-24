@@ -6,8 +6,10 @@ import (
     "bufio"
     "strings"
     "log"
+    "os"
 
     "github.com/thnery/go-google-geocoding/geocoding"
+    "github.com/thnery/go-google-geocoding/util"
 )
 
 func ReadFile(key, filePath string) {
@@ -21,33 +23,30 @@ func ReadFile(key, filePath string) {
     }
 }
 
-func processTxt(key, filePath string) []string {
+func processTxt(key, filePath string) {
     file, err := os.Open(filePath)
-    handleError(err)
+    util.HandleError(err)
     log.Print(file)
     defer file.Close()
 
     scanner := bufio.NewScanner(file)
-    results := []string
     for scanner.Scan() {
         body := geocoding.GetAddressFromGoogle(scanner.Text(), key)
-        result := parseResponseBody(body)
-        printResult(result)
+        result := util.ParseResponseBody(body)
+        util.PrintResult(result)
     }
 }
 
-func processCSV(key, filePath string) []string {
+func processCSV(key, filePath string) {
     file, err := os.Open(filePath)
-    handleError(err)
+    util.HandleError(err)
     defer file.Close()
 
     reader := csv.NewReader(bufio.NewReader(file))
     reader.Comma = ';'
 
     records, err := reader.ReadAll()
-    handleError(err)
-
-    results := []string
+    util.HandleError(err)
 
     for i := range(records) {
         if i == 0 {
@@ -58,11 +57,9 @@ func processCSV(key, filePath string) []string {
         address := strings.Join(records[i], ",")
         if address != "" {
             body := geocoding.GetAddressFromGoogle(address, key)
-            result := parseResponseBody(body)
-            printResult(result)
+            result := util.ParseResponseBody(body)
+            util.PrintResult(result)
         }
     }
-
-    return results
 }
 

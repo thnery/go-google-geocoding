@@ -4,6 +4,9 @@ import(
     "net/http"
     "log"
     "io/ioutil"
+    "os"
+
+    "github.com/thnery/go-google-geocoding/util"
 )
 
 func GetAddressFromGoogle(address, key string) []byte {
@@ -14,7 +17,7 @@ func GetAddressFromGoogle(address, key string) []byte {
     client := &http.Client{}
     req, err := http.NewRequest("GET", "https://maps.googleapis.com/maps/api/geocode/json", nil)
 
-    handleError(err)
+    util.HandleError(err)
 
     query := req.URL.Query()
     query.Add("key", key)
@@ -27,12 +30,12 @@ func GetAddressFromGoogle(address, key string) []byte {
 
     resp, err := client.Do(req)
 
-    handleError(err)
+    util.HandleError(err)
 
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
 
-    handleError(err)
+    util.HandleError(err)
 
     return body
 }
