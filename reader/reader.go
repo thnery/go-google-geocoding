@@ -31,8 +31,10 @@ func processTxt(key, filePath string) {
 
     scanner := bufio.NewScanner(file)
     for scanner.Scan() {
-        body := geocoding.GetAddressFromGoogle(scanner.Text(), key)
-        result := util.ParseResponseBody(body)
+        body := make(chan []byte, 1)
+        go geocoding.GetAddressFromGoogle(body, scanner.Text(), key)
+
+        result := util.ParseResponseBody(<-body)
         util.PrintResult(result)
     }
 }
@@ -56,8 +58,10 @@ func processCSV(key, filePath string) {
 
         address := strings.Join(records[i], ",")
         if address != "" {
-            body := geocoding.GetAddressFromGoogle(address, key)
-            result := util.ParseResponseBody(body)
+            body := make(chan []byte, 1)
+            go geocoding.GetAddressFromGoogle(body, address, key)
+
+            result := util.ParseResponseBody(<-body)
             util.PrintResult(result)
         }
     }

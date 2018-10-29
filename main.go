@@ -30,8 +30,10 @@ func main() {
 
         reader.ReadFile(*key, *file)
     } else {
-        body := geocoding.GetAddressFromGoogle(*address, *key)
-        result := util.ParseResponseBody(body)
+        body := make(chan []byte, 1)
+        go geocoding.GetAddressFromGoogle(body, *address, *key)
+
+        result := util.ParseResponseBody(<-body)
         util.PrintResult(result)
     }
 }

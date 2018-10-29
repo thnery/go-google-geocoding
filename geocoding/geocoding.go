@@ -9,7 +9,7 @@ import(
     "github.com/thnery/go-google-geocoding/util"
 )
 
-func GetAddressFromGoogle(address, key string) []byte {
+func GetAddressFromGoogle(bodyCh chan<- []byte, address string, key string) {
     if address == "" {
         os.Exit(1)
     }
@@ -37,6 +37,6 @@ func GetAddressFromGoogle(address, key string) []byte {
 
     util.HandleError(err)
 
-    return body
+    bodyCh <- body
 }
 
